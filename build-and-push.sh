@@ -1,8 +1,9 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
-function get_tags()
-{
-    curl "https://hub.docker.com/v2/repositories/$1/tags?page_size=6&page=1" \
+set -euo pipefail
+
+function get_tags() {
+    curl -s "https://hub.docker.com/v2/repositories/$1/tags?page_size=6&page=1" \
     | jq -r '.results[].name'
 } 
 
@@ -11,17 +12,24 @@ rclone_tags=$(get_tags "rclone/rclone" | tac)
 
 for restic_tag in $restic_tags; do
     for rclone_tag in $rclone_tags; do
-        image_name="tofran/restic-rclone:${restic_tag}_${rclone_tag}"
+        tag="${restic_tag}_${rclone_tag}"
+        dockerhub_image="tofran/restic-rclone:${tag}"
+        github_image="ghcr.io/tofran/restic-rclone:${tag}"
 
-        echo "Building ${image_name}"
+        docker pull "$dockerhub_image"
+
+        echo -e "\nBuilding $dockerhub_image"
         docker build \
             --build-arg "RESTIC_TAG=${restic_tag}" \
             --build-arg "RCLONE_TAG=${rclone_tag}" \
-            --cache-from "${image_name}" \
-            --tag "${image_name}" \
+            --cache-from "$dockerhub_image" \
+            --tag "$dockerhub_image" \
             .
 
-        echo "Pushing ${image_name}"
-        docker push "${image_name}"
+        docker tag "$dockerhub_image" "$github_image"
+
+        echo -e "\nPushing $dockerhub_image and $github_image"
+        docker push "$dockerhub_image"
+        docker push "$github_image"
     done
 done

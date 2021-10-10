@@ -1,9 +1,9 @@
 # restic-rclone docker images
 
 [![Docker Image Size](https://img.shields.io/docker/image-size/tofran/restic-rclone?sort=date)][DockerHub]
+[![Docker Pulls](https://img.shields.io/docker/pulls/tofran/restic-rclone)][DockerHub]
 
 A minimal alpine docker image with **restic** and **rclone**.
-
 
 [tofran/restic-rclone @ docker hub][DockerHub]
 
