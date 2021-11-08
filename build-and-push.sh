@@ -16,7 +16,7 @@ for restic_tag in $restic_tags; do
         dockerhub_image="tofran/restic-rclone:${tag}"
         github_image="ghcr.io/tofran/restic-rclone:${tag}"
 
-        docker pull "$dockerhub_image"
+        docker pull "$dockerhub_image" || true
 
         echo -e "\nBuilding $dockerhub_image"
         docker build \
