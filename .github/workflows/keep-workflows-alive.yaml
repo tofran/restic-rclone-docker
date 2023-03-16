@@ -1,0 +1,26 @@
+name: Keep workflows alive
+
+on:
+  workflow_dispatch:
+  schedule:
+    # Every 1st day of the month at 00:00 UTC
+    - cron: "0 0 1 * *"
+
+jobs:
+  cron:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Setup git config
+        env:
+          NAME: 'GitHub Actions Bot'
+          EMAIL: 41898282+github-actions[bot]@users.noreply.github.com
+        run: |
+          git config user.name "$NAME"
+          git config user.email "$EMAIL"
+
+      - name: Commit
+        run: |
+          git commit --allow-empty -m "Keep workflows alive"
+          git push
