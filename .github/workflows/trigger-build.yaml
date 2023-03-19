@@ -1,0 +1,53 @@
+name: Trigger builds
+
+on:
+  schedule:
+    # Every monday at 10:00 UTC
+    - cron:  "0 10 * * 1"
+  workflow_dispatch:
+
+jobs:
+  get_versions:
+    name: Get latest versions
+    timeout-minutes: 1
+    runs-on: ubuntu-latest
+    outputs:
+      restic_versions: ${{ steps.get_restic_versions.outputs.versions }}
+      rclone_versions: ${{ steps.get_rclone_versions.outputs.versions }}
+    steps:
+      - name: Install dependencies
+        run: sudo apt-get install jq
+
+      - id: get_restic_versions
+        name: Get Restic versions
+        env:
+          DOCKER_IMAGE: "restic/restic"
+          PAGE_SIZE: ${{ vars.UPSTREAM_TAGS_PAGE_SIZE | '6' }}
+        run: |
+          versions=$(
+            curl -s "https://hub.docker.com/v2/repositories/${DOCKER_IMAGE}/tags?page_size=${PAGE_SIZE}&page=1" \
+            | jq -c '[.results[].name]'
+          )
+          echo "versions=${versions}" >> $GITHUB_OUTPUT
+
+      - id: get_rclone_versions
+        name: Get Rclone versions
+        env:
+          DOCKER_IMAGE: "rclone/rclone" 
+          PAGE_SIZE: ${{ vars.UPSTREAM_TAGS_PAGE_SIZE | '6' }}
+        run: |
+          versions=$(
+            curl -s "https://hub.docker.com/v2/repositories/${DOCKER_IMAGE}/tags?page_size=${PAGE_SIZE}&page=1" \
+            | jq -c '[.results[].name]'
+          )
+          echo "versions=${versions}" >> $GITHUB_OUTPUT
+
+  build-and-push:
+    name: Build and push images
+    uses: ./.github/workflows/build-and-push.yaml
+    secrets: inherit
+    needs:
+      - get_versions
+    with:
+      restic_versions: ${{ needs.get_versions.outputs.restic_versions }}
+      rclone_versions: ${{ needs.get_versions.outputs.rclone_versions }}
