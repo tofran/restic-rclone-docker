@@ -22,7 +22,7 @@ jobs:
         name: Get Restic versions
         env:
           DOCKER_IMAGE: "restic/restic"
-          PAGE_SIZE: ${{ vars.UPSTREAM_TAGS_PAGE_SIZE | '6' }}
+          PAGE_SIZE: ${{ vars.UPSTREAM_TAGS_PAGE_SIZE || '6' }}
         run: |
           versions=$(
             curl -s "https://hub.docker.com/v2/repositories/${DOCKER_IMAGE}/tags?page_size=${PAGE_SIZE}&page=1" \
@@ -34,7 +34,7 @@ jobs:
         name: Get Rclone versions
         env:
           DOCKER_IMAGE: "rclone/rclone" 
-          PAGE_SIZE: ${{ vars.UPSTREAM_TAGS_PAGE_SIZE | '6' }}
+          PAGE_SIZE: ${{ vars.UPSTREAM_TAGS_PAGE_SIZE || '6' }}
         run: |
           versions=$(
             curl -s "https://hub.docker.com/v2/repositories/${DOCKER_IMAGE}/tags?page_size=${PAGE_SIZE}&page=1" \
