@@ -45,6 +45,10 @@ jobs:
   build-and-push:
     name: Build and push images
     uses: ./.github/workflows/build-and-push.yaml
+    permissions:
+      contents: read
+      id-token: write
+      packages: write
     secrets: inherit
     needs:
       - get_versions

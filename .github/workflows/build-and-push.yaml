@@ -23,7 +23,6 @@ on:
         required: true
         type: string
 
-
 env:
   TARGET_PLATFORMS: linux/386,linux/amd64,linux/arm/v6,linux/arm/v7,linux/arm64
 
@@ -32,6 +31,7 @@ jobs:
     name: Build & push
     runs-on: ubuntu-latest
     timeout-minutes: 20
+
     permissions:
       contents: read
       id-token: write
