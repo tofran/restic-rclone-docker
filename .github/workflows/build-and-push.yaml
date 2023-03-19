@@ -1,37 +1,95 @@
-name: Build and deploy
+name: Build and push
 
 on:
-  schedule:
-    # Every monday at 10am utc
-    - cron:  "0 10 * * 1"
-  push:
-    branches:
-      - main
+  workflow_call:
+    inputs:
+      restic_versions:
+        description: 'Restic versions to build to, encoded as a JSON array.'
+        required: true
+        type: string
+      rclone_versions:
+        description: 'Restic versions to build to, encoded as a JSON array.'
+        required: true
+        type: string
+
   workflow_dispatch:
+    inputs:
+      restic_versions:
+        description: 'Restic versions to build to, encoded as a JSON array.'
+        required: true
+        type: string
+      rclone_versions:
+        description: 'Restic versions to build to, encoded as a JSON array.'
+        required: true
+        type: string
+
+
+env:
+  TARGET_PLATFORMS: linux/386,linux/amd64,linux/arm/v6,linux/arm/v7,linux/arm64
 
 jobs:
-  build:
-    runs-on: ubuntu-20.04
+  build-and-push:
+    name: Build & push
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+      id-token: write
+      packages: write
+
+    strategy:
+      fail-fast: false
+      max-parallel: 4
+      matrix:
+        restic_version: ${{ fromJSON(inputs.restic_versions) }}
+        rclone_version: ${{ fromJSON(inputs.rclone_versions) }}
+
+    concurrency:
+      group: build-and-push-restic_rclone:${{ matrix.restic_version }}-${{ matrix.rclone_version }}
+
     steps:
-      - name: Install dependencies
-        run: sudo apt-get install jq
+      - uses: actions/checkout@v3
 
-      - name: Check out repository
-        uses: actions/checkout@v2
-
-      - name: Login to Docker Hub
-        uses: docker/login-action@v1
+      - name: Login to DockerHub
+        uses: docker/login-action@v2
         with:
-          # Username hardcoded so it doesn't get redacted from the log
-          username: tofran
+          username: ${{ github.repository_owner }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      - name: Login to GitHub Container Registry
-        uses: docker/login-action@v1
+      - name: Login to GitHub container registry
+        uses: docker/login-action@v2
         with:
           registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GH_REGISTRY_PASSWORD }}
+          username: ${{ github.repository_owner }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v2
+        with:
+          platforms: ${{ env.TARGET_PLATFORMS }}
+
+      - name: Set up Docker Buildx
+        id: buildx
+        uses: docker/setup-buildx-action@v2
+
+      - name: Docker metadata
+        id: docker_metadata
+        uses: docker/metadata-action@v4
+        with:
+          images: |
+            tofran/restic-rclone
+            ghcr.io/tofran/restic-rclone
+          tags: |
+            type=raw,value=${{ matrix.restic_version }}_${{ matrix.rclone_version }}
+          flavor: |
+            latest=false
 
       - name: Build and push
-        run: ./build-and-push.sh
+        id: docker_build
+        uses: docker/build-push-action@v4
+        with:
+          context: ./
+          file: ./Dockerfile
+          platforms: ${{ env.TARGET_PLATFORMS }}
+          tags: ${{ steps.docker_metadata.outputs.tags }}
+          labels: ${{ steps.docker_metadata.outputs.labels }}
