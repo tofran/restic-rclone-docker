@@ -8,7 +8,7 @@ on:
         required: true
         type: string
       rclone_versions:
-        description: 'Restic versions to build to, encoded as a JSON array.'
+        description: 'Rclone versions to build to, encoded as a JSON array.'
         required: true
         type: string
 
@@ -19,7 +19,7 @@ on:
         required: true
         type: string
       rclone_versions:
-        description: 'Restic versions to build to, encoded as a JSON array.'
+        description: 'Rclone versions to build to, encoded as a JSON array.'
         required: true
         type: string
 
@@ -93,3 +93,4 @@ jobs:
           platforms: ${{ env.TARGET_PLATFORMS }}
           tags: ${{ steps.docker_metadata.outputs.tags }}
           labels: ${{ steps.docker_metadata.outputs.labels }}
+          push: true
