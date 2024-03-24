@@ -5,6 +5,10 @@ on:
     # Every monday at 10:00 UTC
     - cron:  "0 10 * * 1"
   workflow_dispatch:
+  push:
+    branches:
+      - main
+  pull_request:
 
 jobs:
   get_versions:
