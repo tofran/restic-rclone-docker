@@ -74,7 +74,7 @@ jobs:
 
       - name: Docker metadata
         id: docker_metadata
-        uses: docker/metadata-action@v4
+        uses: docker/metadata-action@v5
         with:
           images: |
             tofran/restic-rclone
@@ -82,15 +82,15 @@ jobs:
           tags: |
             type=raw,value=${{ matrix.restic_version }}_${{ matrix.rclone_version }}
           flavor: |
-            latest=false
+            latest=${{ matrix.restic_version == 'latest' && matrix.rclone_version == 'latest'}}
 
       - name: Build and push
         id: docker_build
-        uses: docker/build-push-action@v4
+        uses: docker/build-push-action@v5
         with:
           context: ./
           file: ./Dockerfile
           platforms: ${{ env.TARGET_PLATFORMS }}
           tags: ${{ steps.docker_metadata.outputs.tags }}
           labels: ${{ steps.docker_metadata.outputs.labels }}
-          push: true
+          push: ${{ github.ref == 'refs/heads/main' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch' ||  github.event_name == 'schedule')}}
