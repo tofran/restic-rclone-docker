@@ -39,7 +39,7 @@ jobs:
 
     strategy:
       fail-fast: false
-      max-parallel: 4
+      max-parallel: 2
       matrix:
         restic_version: ${{ fromJSON(inputs.restic_versions) }}
         rclone_version: ${{ fromJSON(inputs.rclone_versions) }}
