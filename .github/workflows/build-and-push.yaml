@@ -39,7 +39,7 @@ jobs:
 
     strategy:
       fail-fast: false
-      max-parallel: 2
+      max-parallel: 1
       matrix:
         restic_version: ${{ fromJSON(inputs.restic_versions) }}
         rclone_version: ${{ fromJSON(inputs.rclone_versions) }}
@@ -86,7 +86,7 @@ jobs:
 
       - name: Build and push
         id: docker_build
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v6
         with:
           context: ./
           file: ./Dockerfile
