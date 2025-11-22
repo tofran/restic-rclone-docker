@@ -24,7 +24,7 @@ jobs:
         env:
           DOCKER_IMAGE: "restic/restic"
           GITHUB_REPO: "restic/restic"
-          PAGE_SIZE: ${{ vars.IMAGE_TAGS_COUNT || '6' }}
+          IMAGE_TAGS_COUNT: ${{ vars.IMAGE_TAGS_COUNT || '6' }}
         run: |
           set -euxo pipefail
 
@@ -50,7 +50,7 @@ jobs:
         env:
           DOCKER_IMAGE: "rclone/rclone" 
           GITHUB_REPO: "rclone/rclone" 
-          PAGE_SIZE: ${{ vars.UPSTREAM_TAGS_PAGE_SIZE || '6' }}
+          IMAGE_TAGS_COUNT: ${{ vars.IMAGE_TAGS_COUNT || '6' }}
         run: |
           set -euxo pipefail
 
