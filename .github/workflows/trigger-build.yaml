@@ -24,26 +24,42 @@ jobs:
 
       - id: get_restic_versions
         name: Get Restic versions
+        shell: bash
         env:
           DOCKER_IMAGE: "restic/restic"
+          GITHUB_REPO: "restic/restic"
           PAGE_SIZE: ${{ vars.UPSTREAM_TAGS_PAGE_SIZE || '6' }}
         run: |
+          # versions=$(
+          #   curl -s "https://hub.docker.com/v2/repositories/${DOCKER_IMAGE}/tags?page_size=${PAGE_SIZE}&page=1" \
+          #   | jq -c '[.results[].name]'
+          # )
+
           versions=$(
-            curl -s "https://hub.docker.com/v2/repositories/${DOCKER_IMAGE}/tags?page_size=${PAGE_SIZE}&page=1" \
-            | jq -c '[.results[].name]'
+            curl -s "https://api.github.com/repos/${GITHUB_REPO}/releases?per_page=${PAGE_SIZE}" \
+            | jq -r '["latest"] + [.[] | select(.prerelease == false) | .tag_name | sub("^v"; "")] | .[0:5]'
           )
+
           echo "versions=${versions}" >> $GITHUB_OUTPUT
 
       - id: get_rclone_versions
         name: Get Rclone versions
+        shell: bash
         env:
           DOCKER_IMAGE: "rclone/rclone" 
+          GITHUB_REPO: "rclone/rclone" 
           PAGE_SIZE: ${{ vars.UPSTREAM_TAGS_PAGE_SIZE || '6' }}
         run: |
+          # versions=$(
+          #   curl -s "https://hub.docker.com/v2/repositories/${DOCKER_IMAGE}/tags?page_size=${PAGE_SIZE}&page=1" \
+          #   | jq -c '[.results[].name]'
+          # )
+
           versions=$(
-            curl -s "https://hub.docker.com/v2/repositories/${DOCKER_IMAGE}/tags?page_size=${PAGE_SIZE}&page=1" \
-            | jq -c '[.results[].name]'
+            curl -s "https://api.github.com/repos/${GITHUB_REPO}/releases?per_page=${PAGE_SIZE}" \
+            | jq -r '["latest"] + [.[] | select(.prerelease == false) | .tag_name | sub("^v"; "")] | .[0:5]'
           )
+
           echo "versions=${versions}" >> $GITHUB_OUTPUT
 
   build-and-push:
