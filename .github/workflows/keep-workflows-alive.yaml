@@ -7,10 +7,13 @@ on:
     - cron: "0 0 1 * *"
 
 jobs:
-  cron:
+  commit-empty-commit:
+    name: Commit empty commit
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Setup git config
         env:
@@ -21,6 +24,16 @@ jobs:
           git config user.email "$EMAIL"
 
       - name: Commit
+        shell: bash
         run: |
-          git commit --allow-empty -m "Keep workflows alive"
-          git push
+          DATE=$(date -u +"%Y-%m-%d")
+          LAST_COMMIT=$(git log -1 --pretty=%B)
+
+          if [[ "$LAST_COMMIT" == Keep\ workflows\ alive* ]]; then
+            git commit --allow-empty --amend -m "Keep workflows alive [$DATE]"
+            git push --force-with-lease
+          else
+            git commit --allow-empty -m "Keep workflows alive [$DATE]"
+            git push
+          fi
+          
