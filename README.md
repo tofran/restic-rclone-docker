@@ -19,7 +19,11 @@ Images are tagged with a combination of Restic and Rclone tags, in the format:
 
 Example tags: `latest_latest`, `0.16.0_1.64.0`, `latest_1.64.0`, `0.16.0_latest`.
 
-The latest 4 images from both upstreams are maintained. Image building is automatic, via [GitHub actions](https://github.com/tofran/restic-rclone-docker/actions).
+The latest 4 images from both upstreams are maintained.
+Image building is automatic, via [GitHub actions](https://github.com/tofran/restic-rclone-docker/actions).
+
+There is no guarantee the versions are compatible, please check both software releases and
+documentation
 
 ## Architecture support
 
@@ -35,10 +39,10 @@ $ docker pull tofran/restic-rclone:0.15.1_1.61.1
 $ docker pull ghcr.io/tofran/restic-rclone:0.15.1_1.61.1
 
 # Run it:
-$ docker run tofran/restic-rclone:0.15.1_1.61.1 -v
+$ docker run tofran/restic-rclone:0.15.1_1.61.1 version
 #  or
-$ docker run ghcr.io/tofran/restic-rclone:0.15.1_1.61.1 -v
-# > restic 0.15.1 compiled with go1.19.5 on linux/amd64
+$ docker run ghcr.io/tofran/restic-rclone:0.15.1_1.61.1 version
+# > restic 0.18.1 compiled with go1.25.1 on linux/arm64
 ```
 
 `restic` is the default entrypoint.
