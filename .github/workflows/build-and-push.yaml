@@ -1,0 +1,98 @@
+name: Build and push
+
+on:
+  workflow_call:
+    inputs:
+      restic_versions:
+        description: 'Restic versions to build to, encoded as a JSON array.'
+        required: true
+        type: string
+      rclone_versions:
+        description: 'Rclone versions to build to, encoded as a JSON array.'
+        required: true
+        type: string
+
+  workflow_dispatch:
+    inputs:
+      restic_versions:
+        description: 'Restic versions to build to, encoded as a JSON array.'
+        required: true
+        type: string
+      rclone_versions:
+        description: 'Rclone versions to build to, encoded as a JSON array.'
+        required: true
+        type: string
+
+env:
+  TARGET_PLATFORMS: linux/386,linux/amd64,linux/arm,linux/arm64
+
+jobs:
+  build-and-push:
+    name: Build & push
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    permissions:
+      contents: read
+      id-token: write
+      packages: write
+
+    strategy:
+      fail-fast: false
+      max-parallel: 1
+      matrix:
+        restic_version: ${{ fromJSON(inputs.restic_versions) }}
+        rclone_version: ${{ fromJSON(inputs.rclone_versions) }}
+
+    concurrency:
+      group: build-and-push-restic_rclone:${{ matrix.restic_version }}-${{ matrix.rclone_version }}
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+        with:
+          platforms: ${{ env.TARGET_PLATFORMS }}
+
+      - name: Set up Docker Buildx
+        id: buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to DockerHub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ github.repository_owner }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Login to GitHub container registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.repository_owner }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Docker metadata
+        id: docker_metadata
+        uses: docker/metadata-action@v5
+        with:
+          images: |
+            tofran/restic-rclone
+            ghcr.io/tofran/restic-rclone
+          tags: |
+            type=raw,value=${{ matrix.restic_version }}_${{ matrix.rclone_version }}
+          flavor: |
+            latest=${{ matrix.restic_version == 'latest' && matrix.rclone_version == 'latest'}}
+
+      - name: Build and push
+        id: docker_build
+        uses: docker/build-push-action@v6
+        with:
+          context: ./
+          file: ./Dockerfile
+          platforms: ${{ env.TARGET_PLATFORMS }}
+          tags: ${{ steps.docker_metadata.outputs.tags }}
+          labels: ${{ steps.docker_metadata.outputs.labels }}
+          push: ${{ github.ref == 'refs/heads/main' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch' ||  github.event_name == 'schedule')}}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
