@@ -1,0 +1,39 @@
+name: Keep workflows alive
+
+on:
+  workflow_dispatch:
+  schedule:
+    # Every 1st day of the month at 00:00 UTC
+    - cron: "0 0 1 * *"
+
+jobs:
+  commit-empty-commit:
+    name: Commit empty commit
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Setup git config
+        env:
+          NAME: 'GitHub Actions Bot'
+          EMAIL: 41898282+github-actions[bot]@users.noreply.github.com
+        run: |
+          git config user.name "$NAME"
+          git config user.email "$EMAIL"
+
+      - name: Commit
+        shell: bash
+        run: |
+          DATE=$(date -u +"%Y-%m-%d")
+          LAST_COMMIT=$(git log -1 --pretty=%B)
+
+          if [[ "$LAST_COMMIT" == Keep\ workflows\ alive* ]]; then
+            git commit --allow-empty --amend -m "Keep workflows alive [$DATE]"
+            git push --force-with-lease
+          else
+            git commit --allow-empty -m "Keep workflows alive [$DATE]"
+            git push
+          fi
+          
