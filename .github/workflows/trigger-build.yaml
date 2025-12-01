@@ -1,0 +1,85 @@
+name: Trigger builds
+
+on:
+  schedule:
+    # Every monday at 10:00 UTC
+    - cron:  "0 10 * * 1"
+  workflow_dispatch:
+
+jobs:
+  get_versions:
+    name: Get latest versions
+    timeout-minutes: 1
+    runs-on: ubuntu-latest
+    outputs:
+      restic_versions: ${{ steps.get_restic_versions.outputs.versions }}
+      rclone_versions: ${{ steps.get_rclone_versions.outputs.versions }}
+    steps:
+      - name: Install dependencies
+        run: sudo apt-get install jq
+
+      - id: get_restic_versions
+        name: Get Restic versions
+        shell: bash
+        env:
+          DOCKER_IMAGE: "restic/restic"
+          GITHUB_REPO: "restic/restic"
+          IMAGE_TAGS_COUNT: ${{ vars.IMAGE_TAGS_COUNT || '6' }}
+        run: |
+          set -euxo pipefail
+
+          # versions=$(
+          #   curl -s "https://hub.docker.com/v2/repositories/${DOCKER_IMAGE}/tags?page_size=${IMAGE_TAGS_COUNT}&page=1" \
+          #   | jq -c '[.results[].name]'
+          # )
+
+          versions=$(
+            curl -s \
+              -H "Accept: application/vnd.github+json" \
+              -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+              -H "X-GitHub-Api-Version: 2022-11-28" \
+              "https://api.github.com/repos/${GITHUB_REPO}/releases?per_page=50" \
+            | jq -c "[\"latest\"] + [.[] | select(.prerelease == false) | .tag_name | sub(\"^v\"; \"\")] | .[0:${IMAGE_TAGS_COUNT}]"
+          )
+
+          echo "versions=${versions}" >> $GITHUB_OUTPUT
+
+      - id: get_rclone_versions
+        name: Get Rclone versions
+        shell: bash
+        env:
+          DOCKER_IMAGE: "rclone/rclone" 
+          GITHUB_REPO: "rclone/rclone" 
+          IMAGE_TAGS_COUNT: ${{ vars.IMAGE_TAGS_COUNT || '6' }}
+        run: |
+          set -euxo pipefail
+
+          # versions=$(
+          #   curl -s "https://hub.docker.com/v2/repositories/${DOCKER_IMAGE}/tags?page_size=${IMAGE_TAGS_COUNT}&page=1" \
+          #   | jq -c '[.results[].name]'
+          # )
+
+          versions=$(
+            curl -s \
+              -H "Accept: application/vnd.github+json" \
+              -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+              -H "X-GitHub-Api-Version: 2022-11-28" \
+              "https://api.github.com/repos/${GITHUB_REPO}/releases?per_page=50" \
+            | jq -c "[\"latest\"] + [.[] | select(.prerelease == false) | .tag_name | sub(\"^v\"; \"\")] | .[0:${IMAGE_TAGS_COUNT}]"
+          )
+
+          echo "versions=${versions}" >> $GITHUB_OUTPUT
+
+  build-and-push:
+    name: Build and push images
+    uses: ./.github/workflows/build-and-push.yaml
+    permissions:
+      contents: read
+      id-token: write
+      packages: write
+    secrets: inherit
+    needs:
+      - get_versions
+    with:
+      restic_versions: ${{ needs.get_versions.outputs.restic_versions }}
+      rclone_versions: ${{ needs.get_versions.outputs.rclone_versions }}
